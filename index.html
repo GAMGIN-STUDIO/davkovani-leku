@@ -188,6 +188,7 @@
 
 		//help function for one row addition
 		function addRowToTable(data){
+				// create new row
 				const newRow = document.createElement("tr");
 				for(const key in data){
 					if(key === "timestamp") continue; // skip timestamp value
@@ -195,7 +196,13 @@
 					newDataCell.innerText = data[key];
 					newRow.appendChild(newDataCell);
 				};
-				document.querySelector("#table-body").prepend(newRow);
+				const tableBody = document.querySelector("#table-body");
+				tableBody.prepend(newRow);
+
+				// keep only 10 row in table body
+				if(tableBody.children.length > 10){
+					tableBody.removeChild(tableBody.lastChild);
+				}
 		}
 
 		// help function for using last results from local storage
