@@ -25,6 +25,36 @@
 		color: red;
 		font-weight: bold;
 		}
+
+		#result {
+			font-size: 25px;
+			color: red;
+		}
+
+		.last-results {
+			display: flex;
+			justify-content: center;
+
+			& h4 {
+				color: darkblue;
+			}
+		}
+
+		.last-results-table {
+			border-collapse: collapse;
+			width: 90%;
+			border-width: 2px;
+			font-size: clamp(10px, 2vw, 18px);
+
+			& th, td {
+				text-align: center;
+			}
+
+			& th {
+				padding-top: 5px;
+			}
+		}
+
 	</style>
 </head>
 <body>
@@ -67,7 +97,25 @@
 			<button>Přepočítat <i class="fa-solid fa-arrow-right"></i></button>
 	</form><br>
 
-	<h3> Přepočet:<span id="result"></span></h3>
+	<h3> Přepočet:<span id="result"></span></h3><br>
+
+	<div class="last-results">
+		<h4>Poslední přepočty</h4>
+	</div>
+
+	<table border="1" class="last-results-table">
+		<thead>
+			<tr></tr>
+				<th>ČAS</th>
+				<th>Váha</th>
+				<th>Dávkování</th>
+				<th>Konc. lék</th>
+				<th>Konc. médium</th>
+				<th>PŘEPOČET</th>
+			</tr>
+		</thead>
+		<tbody id="table-body"></tbody>
+	</table>
 
 	<script>
 
@@ -101,6 +149,30 @@
 				const result2 = davkovaniLeku * result1 / 60;
 				const finalResult = (result2 * 1000 / vaha).toLocaleString('cs-CZ', {maximumFractionDigits: 5});
 				document.querySelector("#result").innerHTML = ` ${finalResult}`;  // `mikrogramů za minutu na 1 kg pacientovi vahy ${vaha} kg`
+
+				// actual timestamp
+				const timeStamp = Date.now();
+
+				// prepare actual data record
+				const data = {
+					timestamp: timeStamp,
+					time: new Date(timeStamp).toLocaleTimeString('cs-CZ'),
+					vaha: vaha,
+					davkovaniLeku: davkovaniLeku,
+					koncentraceLeku: koncentraceLeku,
+					mnozstviMedia: mnozstviMedia,
+					prepocet: finalResult
+				};
+
+				// set data to local storage
+				let fullData = JSON.parse(localStorage.getItem("lastResults")) ?? [];
+				fullData.unshift(data); // add new record to the beginning
+				fullData.splice(10); // keep only last 10 records
+				localStorage.setItem("lastResults", JSON.stringify(fullData));
+
+				// also set individual record for table
+				addRowToTable(data);
+
 			}else{
 				// clear result
 				document.querySelector("#result").innerHTML = "";
@@ -110,9 +182,39 @@
 					document.querySelector(".chyba").innerText = "Váha pacienta je špatně!";
 				}else{
 					document.querySelector(".chyba").innerText = "Prosím, vyplňte všechna pole!";
-				}
+				};
 			};
 		});
+
+		//help function for one row addition
+		function addRowToTable(data){
+				const newRow = document.createElement("tr");
+				for(const key in data){
+					if(key === "timestamp") continue; // skip timestamp value
+					const newDataCell = document.createElement("td");
+					newDataCell.innerText = data[key];
+					newRow.appendChild(newDataCell);
+				};
+				document.querySelector("#table-body").prepend(newRow);
+		}
+
+		// help function for using last results from local storage
+		function useLocalStorage(){
+				// load data
+				const fullData = JSON.parse(localStorage.getItem("lastResults"));
+				if(!fullData) return; // notrhing to load
+
+				// sort data by timestamp differently because of prepend usage in addRowToTable
+				fullData.sort((a, b) => a.timestamp - b.timestamp);
+
+				// create table body
+				for(const data of fullData){
+					addRowToTable(data);
+				}
+		};
+
+		// use help function for last results on page load
+		useLocalStorage();
 
 	</script>
 </body>
